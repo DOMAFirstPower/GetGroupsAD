@@ -18,8 +18,8 @@ namespace GetGroupsAD
         private bool thrdExecut = false;
         private bool thrdImpRunning = false;
         private bool thrdLogRunning = false;
-        private System.Threading.Thread thrdImport;
-        private System.Threading.Thread thrdLog;
+        private Thread thrdImport;
+        private Thread thrdLog;
 
         public frmSyncGroupsOrOUs()
         {
@@ -51,7 +51,7 @@ namespace GetGroupsAD
 
                 this.lblUsers.Invoke(new UpdateTotalUsersCallback(this.UpdateTotalUsers), new object[] { totalUsers.ToString() });
 
-                Thread.Sleep(1);
+                Thread.Sleep(10);
             }
         }
 
@@ -87,6 +87,9 @@ namespace GetGroupsAD
 
         private void btnSync_Click(object sender, EventArgs e)
         {
+            btnSync.Enabled = false;
+            btnSync.Cursor = Cursors.WaitCursor;
+
             try
             {
                 ActiveDirectoryBLL adBLL = new ActiveDirectoryBLL();
@@ -136,6 +139,9 @@ namespace GetGroupsAD
             {
                 MessageBox.Show(ex.Message);
             }
+
+            btnSync.Enabled = true;
+            btnSync.Cursor = Cursors.Default;
         }
 
         private TreeNode PrepareTreeView(ActiveDirectoryBLL pAdBLL, String pRootAccess, String pNodeName, bool pIsChildren, TreeNode pSelectedNode = null)
@@ -165,6 +171,15 @@ namespace GetGroupsAD
             node.Tag = pInfo.ID;
             node.Checked = false;
 
+            if (chkLogResult.Checked)
+            {
+                lstLog.Add("\r\n---- OU Encontrada ----");
+                lstLog.Add("\r\nNome: " + pInfo.Text);
+                lstLog.Add("\r\nID: " + pInfo.ID);
+                lstLog.Add("\r\nPath: " + pInfo.AdsPath);
+                lstLog.Add("\r\n");
+            }
+
             if (pInfo.Items != null)
             {
                 if (this.chkSyncPartial.Checked)
@@ -188,7 +203,7 @@ namespace GetGroupsAD
             this.thrdExecut = true;
             this.thrdImpRunning = true;
 
-            if (this.thrdImport.ThreadState != System.Threading.ThreadState.Running)
+            if (this.thrdImport.ThreadState != ThreadState.Running)
             {
                 this.thrdImport.Start();
                 System.Threading.Thread.Sleep(10);
@@ -227,6 +242,7 @@ namespace GetGroupsAD
                                     persona += "\r\nEnabled user: " + ((Convert.ToBoolean((int)de.Properties["userAccountControl"][0] & 0x0002)) ? "No" : "Yes");
                                 }
                                 persona += "\r\nDomain: " + this.GetDomainFromDistinguishedName((String)de.Properties["distinguishedname"][0]);
+                                persona += "\r\nPath: " + ((de.Properties["adspath"].Count > 0) ? (String)de.Properties["adspath"][0] : "Not registred");
 
                                 persona += " \r\n";
 
@@ -260,6 +276,7 @@ namespace GetGroupsAD
                                         persona += "\r\nEnabled User: " + ((Convert.ToBoolean((int)member.Properties["userAccountControl"][0] & 0x0002)) ? "No" : "Yes");
                                     }
                                     persona += "\r\nDomain: " + this.GetDomainFromDistinguishedName((String)member.Properties["distinguishedname"][0]);
+                                    persona += "\r\nPath: " + ((member.Properties["adspath"].Count > 0) ? (String)member.Properties["adspath"][0] : "Not registred");
 
                                     persona += " \r\n";
 
@@ -301,6 +318,7 @@ namespace GetGroupsAD
                         search.PropertiesToLoad.Add("cn");
                         search.PropertiesToLoad.Add("userAccountControl");
                         search.PropertiesToLoad.Add("distinguishedname");
+                        search.PropertiesToLoad.Add("adspath");
 
                         search.PageSize = 5000;
                         resultCol = search.FindAll();
@@ -327,6 +345,7 @@ namespace GetGroupsAD
                                     persona += "\r\nEnabled User: " + ((Convert.ToBoolean((int)result.Properties["userAccountControl"][0] & 0x0002)) ? "No" : "Yes");
 
                                 persona += "\r\nDomain: " + this.GetDomainFromDistinguishedName((String)result.Properties["distinguishedname"][0]);
+                                persona += "\r\nPath: " + ((result.Properties["adspath"].Count > 0) ? (String)result.Properties["adspath"][0] : "Not registred");
 
                                 persona += "\r\n";
 
@@ -488,23 +507,6 @@ namespace GetGroupsAD
             }
         }
 
-        private TreeNode CleanTree(TreeNode node)
-        {
-            TreeNode currNode = node;
-
-            while (node.Parent != null)
-            {
-                TreeNode cleanNode = new TreeNode();
-                cleanNode.Text = node.Parent.Text;
-                cleanNode.Nodes.Add(currNode);
-                node = node.Parent;
-
-                currNode = node;           
-            }
-
-            return currNode;
-        }
-
         private TreeNode AdicionarParenteNode(TreeNode pNode)
         {
             TreeNode nodeParente = new TreeNode();
@@ -517,6 +519,15 @@ namespace GetGroupsAD
                 nodeParente = pNode;
 
             return nodeParente;
+        }
+
+        private void txtResult_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.KeyData == (Keys.Control | Keys.A))
+            {
+                txtResult.SelectAll();
+                e.Handled = e.SuppressKeyPress = true;
+            }
         }
     }
 }
