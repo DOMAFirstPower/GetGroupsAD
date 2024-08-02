@@ -50,6 +50,7 @@ namespace GetGroupsAD
                         ID = acessoAd.Guid.ToString(),
                         Text = pIsChildren ? pNodeName : domain,
                         Expanded = true,
+                        AdsPath = acessoAd.Path,
                         Items = null
                     };
 
@@ -87,6 +88,7 @@ namespace GetGroupsAD
                 ID = pDomain + ":" + entry.Guid.ToString(),
                 Text = entry.Name,
                 Path = entry.Properties["distinguishedName"][0].ToString(),
+                AdsPath = entry.Path,
                 Items = null
             };
 

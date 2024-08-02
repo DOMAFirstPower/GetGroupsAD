@@ -9,6 +9,7 @@ namespace GetGroupsAD
         public String Text { get; set; }
         public bool Checked { get; set; }
         public String Path { get; set; }
+        public String AdsPath { get; set; }
 
         public bool Expanded { get; set; }
         public DirectoryEntryInfo Parent { get; set; }
