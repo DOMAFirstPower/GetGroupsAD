@@ -3,7 +3,6 @@
 .git
 .vs
 
-
 # User-specific files
 *.suo
 *.user
